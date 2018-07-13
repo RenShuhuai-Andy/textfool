@@ -9,11 +9,10 @@ import model as model_config
 
 from data_utils import load as load_data, extract_features
 from adversarial_tools import ForwardGradWrapper, adversarial_paraphrase, \
-        _stats_probability_shifts
-
+    _stats_probability_shifts
 
 parser = argparse.ArgumentParser(
-        description='Craft adversarial examples for a text classifier.')
+    description='Craft adversarial examples for a text classifier.')
 parser.add_argument('--model_path',
                     help='Path to model weights',
                     default='./data/model.dat')
@@ -40,22 +39,26 @@ if __name__ == '__main__':
     test_samples_cap = args.test_samples_cap
 
     # Load Twitter gender data
-    (_, _, X_test, y_test), (docs_train, docs_test, _) = \
-            load_data('twitter_gender_data', from_cache=False)
+    # 添加推特性别数据
+    (_, _, X_test, y_test), (docs_train, docs_test, _) = load_data('twitter_gender_data', from_cache=False)
 
     # Load model from weights
+    # 读取keras模型的权重
     model = model_config.build_model()
     model.load_weights(args.model_path)
 
     # Initialize the class that computes forward derivatives
-    grad_guide = ForwardGradWrapper(model)
+    # 计算前向导数
+    grad_guide = ForwardGradWrapper(model)  # adversarial_tools中的类
 
     # Calculate accuracy on test examples
+    # 计算测试样本的准确性
     preds = model.predict_classes(X_test[:test_samples_cap, ]).squeeze()
     accuracy = np.mean(preds == y_test[:test_samples_cap])
     print('Model accuracy on test:', accuracy)
 
     # Choose some female tweets
+    # 选取一些女性发的推特
     female_indices, = np.where(y_test[:test_samples_cap] == 0)
 
     print('Crafting adversarial examples...')
@@ -69,7 +72,7 @@ if __name__ == '__main__':
             # If model prediction is correct, and the true class is female,
             # craft adversarial text
             adv_doc, (y, adv_y) = adversarial_paraphrase(
-                    doc, grad_guide, target=1, use_typos=args.use_typos)
+                doc, grad_guide, target=1, use_typos=args.use_typos)
 
             pred = np.round(adv_y)
             if pred != preds[index]:
@@ -90,16 +93,16 @@ if __name__ == '__main__':
             })
 
     print('Model accuracy on adversarial examples:',
-            np.mean(adversarial_preds == y_test[:test_samples_cap]))
+          np.mean(adversarial_preds == y_test[:test_samples_cap]))
     print('Fooling success rate:',
-            successful_perturbations / (successful_perturbations + failed_perturbations))
+          successful_perturbations / (successful_perturbations + failed_perturbations))
     print('Average probability shift:', np.mean(
-            np.array(_stats_probability_shifts)))
+        np.array(_stats_probability_shifts)))
 
     # Save resulting docs in a CSV file
     with open(args.adversarial_texts_path, 'w') as handle:
         writer = csv.DictWriter(handle,
-                fieldnames=adversarial_text_data[0].keys())
+                                fieldnames=adversarial_text_data[0].keys())
         writer.writeheader()
         for item in adversarial_text_data:
             writer.writerow(item)

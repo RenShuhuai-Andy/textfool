@@ -9,14 +9,12 @@ from model import build_model
 
 np.random.seed(42)
 
-
 epochs = 16
 batch_size = 64
 
 model_path = './data/model.dat'
 log_dir = './logs'
 grid_search = False
-
 
 if __name__ == '__main__':
     # Load Twitter gender data
@@ -30,19 +28,21 @@ if __name__ == '__main__':
 
     if not grid_search:
         tb_callback = keras.callbacks.TensorBoard(
-                log_dir=log_dir, histogram_freq=0, write_graph=True)
+            log_dir=log_dir, histogram_freq=0, write_graph=True)
 
         model = build_model()
+        # 使用model.fit进行训练
         model.fit(X_train, y_train,
                   validation_data=(X_test, y_test),
                   batch_size=batch_size, epochs=epochs,
-                  callbacks=[tb_callback])
+                  callbacks=[tb_callback])  # list，其中的元素是keras.callbacks.Callback的对象。这个list中的回调函数将会在训练过程中的适当时机被调用
 
         print('Saving model weights...')
         model.save_weights(model_path)
 
     else:
         # Grid search with cross-validaton on training data set
+        # 使用Grid search做交叉验证？？
         keras_model = KerasClassifier(build_fn=build_model, verbose=0)
         param_grid = {
             'kernel_size': [2, 3],
@@ -62,5 +62,3 @@ if __name__ == '__main__':
         params = grid_result.cv_results_['params']
         for mean, stdev, param in zip(means, stds, params):
             print("%f (%f) with: %r" % (mean, stdev, param))
-
-
